@@ -3,3 +3,19 @@
 
 # MkDocs documentation
 site/
+
+# Local Python and editor files
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+
+# Credentials
+.env
+.env.*
+
+# Generated training data and model weights
+dataset*/
+*.pth
+*.pt
+*.engine
