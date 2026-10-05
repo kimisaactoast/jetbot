@@ -76,25 +76,58 @@ class ControlTests(unittest.TestCase):
     def turn(self,c,direction,t=0):
         c.observation={'corner':direction}
         self.assertEqual(c.step(CENTER,t)[2],'SHARP_APPROACH')
-        return c.step(CENTER,t+.05)
+        advanced=c.step(CENTER,t+.05)
+        self.assertTrue(advanced[2].startswith('SHARP_ADVANCE'))
+        self.assertEqual(advanced[0],advanced[1])
+        return c.step(AWAY,t+.30)
+    def test_advance_latches_direction_and_survives_missing_tape(self):
+        self.c.observation={'corner':1}
+        self.c.step(CENTER,0.)
+        l,r,state=self.c.step(CENTER,.05)
+        self.assertEqual(state,'SHARP_ADVANCE_RIGHT');self.assertEqual(l,r)
+        self.c.observation={'corner':-1}
+        l,r,state=self.c.step(BLANK,.20)
+        self.assertEqual(state,'SHARP_ADVANCE_RIGHT');self.assertEqual(l,r)
+        l,r,state=self.c.step(BLANK,.30)
+        self.assertEqual(state,'SHARP_RIGHT');self.assertGreater(l,0);self.assertLess(r,0)
+        self.assertEqual(self.c.turn_started,.30)
+
+    def test_pivot_must_leave_original_alignment(self):
+        self.c.observation={'corner':1}
+        self.c.step(CENTER,0.);self.c.step(CENTER,.05)
+        self.c.observation={}
+        self.c.step(CENTER,.30)
+        for t in (.7,.75,.8):self.assertEqual(self.c.step(CENTER,t)[2],'SHARP_RIGHT')
+        self.c.step(AWAY,.85)
+        self.c.step(CENTER,.9);self.c.step(CENTER,.95)
+        self.assertEqual(self.c.step(CENTER,1.)[2],'SHARP_DONE')
+
+    def test_direction_specific_advance_times(self):
+        self.ns['SHARP_LEFT_ADVANCE_TIME']=.4
+        self.ns['SHARP_RIGHT_ADVANCE_TIME']=.1
+        for d,expected in ((-1,'SHARP_ADVANCE_LEFT'),(1,'SHARP_RIGHT')):
+            c=self.ns['V5LineController']();c.observation={'corner':d}
+            c.step(CENTER,0.);c.step(CENTER,.05)
+            self.assertEqual(c.step(AWAY,.20)[2],expected)
+
     def test_sharp_right_survives_old_loss_timeout(self):
         l,r,s=self.turn(self.c,1)
         self.assertTrue(l>0 and r<0)
         self.c.observation={}
         self.assertEqual(self.c.step(BLANK,.6)[2],'SHARP_RIGHT')
-        self.assertTrue(self.c.step(BLANK,2.)[2].startswith('STOP'))
+        self.assertTrue(self.c.step(BLANK,2.2)[2].startswith('STOP'))
     def test_both_turns_need_stable_heading(self):
         for direction in (-1,1):
             c=self.ns['V5LineController']();self.turn(c,direction);c.observation={}
             tilted={'near':-.15,'middle':.15,'far':.15}
             self.assertTrue(c.step(tilted,.4)[2].startswith('SHARP'))
-            for t in (.45,.5):self.assertNotEqual(c.step(CENTER,t)[2],'SHARP_DONE')
-            self.assertEqual(c.step(CENTER,.55)[2],'SHARP_DONE')
+            for t in (.60,.65):self.assertNotEqual(c.step(CENTER,t)[2],'SHARP_DONE')
+            self.assertEqual(c.step(CENTER,.70)[2],'SHARP_DONE')
     def test_dense_curve_slowdown(self):
         for start in (0.,1.):
             self.turn(self.c,1,start);self.c.observation={}
-            for delta in (.4,.45,.5):self.c.step(CENTER,start+delta)
-        l,r,s=self.c.step(CENTER,1.6)
+            for delta in (.60,.65,.70):self.c.step(CENTER,start+delta)
+        l,r,s=self.c.step(CENTER,1.8)
         self.assertEqual(s,'FOLLOW_SLOW');self.assertLess(l,self.ns['BASE_SPEED'])
         self.assertEqual(self.c.step(CENTER,8.)[2],'FOLLOW')
     def test_gap_preserved(self):
