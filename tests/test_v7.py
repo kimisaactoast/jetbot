@@ -9,9 +9,9 @@ from io import StringIO
 
 NOTEBOOK = Path(__file__).resolve().parents[1] / 'notebooks/v7.ipynb'
 CELLS = json.loads(NOTEBOOK.read_text())['cells']
-CENTER = dict(near=0., middle=0., far=0.)
-RIGHT = dict(near=.75, middle=.75, far=.75)
-LEFT = dict(near=-.75, middle=-.75, far=-.75)
+CENTER = dict(near=0., middle=0., far=0., extra_far=0.)
+RIGHT = dict(near=.75, middle=.75, far=.75, extra_far=.75)
+LEFT = dict(near=-.75, middle=-.75, far=-.75, extra_far=-.75)
 BLANK = dict.fromkeys(CENTER)
 
 def namespace(images=False):
@@ -162,6 +162,26 @@ class V7Tests(unittest.TestCase):
         fresh=self.ns['LineTracker']()
         self.assertTrue(all(v>0 for v in fresh.select(choices,0.,preferred=1).values()))
 
+    def test_extra_band_resolves_a_path_and_can_be_missing(self):
+        t=self.ns['LineTracker']()
+        choices=dict(near=[(0.,1)],middle=[(0.,1)],
+                     far=[(-.25,1),(.25,1)],extra_far=[(.55,1)])
+        p=t.select(choices,0.)
+        self.assertFalse(t.ambiguous)
+        self.assertEqual(p['far'],.25)
+        self.assertEqual(p['extra_far'],.55)
+        p=t.select(dict(near=[(0.,1)],middle=[(0.,1)],far=[(0.,1)]),.05)
+        self.assertIsNone(p['extra_far'])
+        self.assertFalse(t.ambiguous)
+        self.assertEqual(p['near'],0.)
+
+    def test_overlay_includes_four_bands_but_marker_geometry_is_local(self):
+        points=self.ns['get_line_points']
+        self.assertEqual(len(points(CENTER,224,224,include_extra=True)),4)
+        self.assertEqual(len(points(CENTER,224,224)),3)
+        self.assertLess(points(CENTER,224,224,include_extra=True)[0][1],
+                        points(CENTER,224,224)[0][1])
+
     def test_tracker_does_not_force_disconnected_jump(self):
         t=self.ns['LineTracker']()
         result=t.select(dict(near=[(-.7,1)],middle=[(.7,2)],far=[(.7,2)]),0.)
@@ -234,6 +254,7 @@ class V7ImageTests(unittest.TestCase):
         self.assertTrue(all(v is not None for v in p.values()))
         self.assertLess(p['near'],p['middle'])
         self.assertLess(p['middle'],p['far'])
+        self.assertLess(p['far'],p['extra_far'])
 
     def test_horizontal_patch_not_averaged_to_center(self):
         frame=self.frame()
