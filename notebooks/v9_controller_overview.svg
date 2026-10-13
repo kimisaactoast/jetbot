@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="620" viewBox="0 0 1060 620">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 Z" fill="#475569"/></marker></defs>
+<rect width="1060" height="620" fill="#f8fafc"/>
+<style>text{font-family:Arial,sans-serif;fill:#172033;font-size:16px}.title{font-size:23px;font-weight:bold}.head{font-weight:bold;font-size:18px}.small{font-size:14px}.box{stroke:#64748b;stroke-width:1.5;rx:12}.arrow{fill:none;stroke:#475569;stroke-width:2;marker-end:url(#arrow)}</style>
+<text x="35" y="38" class="title">V9: who controls the robot on each new frame?</text>
+<rect x="320" y="62" width="420" height="64" fill="#e2e8f0" class="box"/>
+<text x="530" y="88" text-anchor="middle" class="head">Runner: validate camera and run time</text>
+<text x="530" y="111" text-anchor="middle">Vision supplies line positions + marker direction</text>
+<path d="M530 126 V168" class="arrow"/>
+<rect x="320" y="170" width="420" height="74" fill="#dbeafe" class="box"/>
+<text x="530" y="198" text-anchor="middle" class="head">NavigationCoordinator</text>
+<text x="530" y="222" text-anchor="middle">Choose one owner using the priority below</text>
+<path d="M385 244 V275 H180 V316" class="arrow"/>
+<path d="M530 244 V316" class="arrow"/>
+<path d="M675 244 V275 H880 V316" class="arrow"/>
+<text x="180" y="302" text-anchor="middle" class="small">1. Active / confirmed eligible green instruction</text>
+<text x="530" y="302" text-anchor="middle" class="small">2. Otherwise: active / justified gap</text>
+<text x="880" y="302" text-anchor="middle" class="small">3. Otherwise: black-line driving</text>
+<rect x="25" y="318" width="310" height="98" fill="#dcfce7" class="box"/>
+<text x="180" y="347" text-anchor="middle" class="head">GreenMarkerTurnController</text>
+<text x="180" y="373" text-anchor="middle">Stop → advance → turn → return</text>
+<text x="180" y="397" text-anchor="middle" class="small">Owns marker confirmation and cooldown</text>
+<rect x="375" y="318" width="310" height="98" fill="#fef3c7" class="box"/>
+<text x="530" y="347" text-anchor="middle" class="head">GapCrossingController</text>
+<text x="530" y="373" text-anchor="middle">Cross briefly → confirm tape → return</text>
+<text x="530" y="397" text-anchor="middle" class="small">Delegates normal driving to black-line control</text>
+<rect x="725" y="318" width="310" height="98" fill="#e2e8f0" class="box"/>
+<text x="880" y="347" text-anchor="middle" class="head">BlackLineController</text>
+<text x="880" y="373" text-anchor="middle">Follow → sharp bend / search → follow</text>
+<text x="880" y="397" text-anchor="middle" class="small">Ordinary tape steering and bounded recovery</text>
+<path d="M180 416 V449 H530 V480" class="arrow"/>
+<path d="M530 416 V480" class="arrow"/>
+<path d="M880 416 V449 H530" fill="none" stroke="#475569" stroke-width="2"/>
+<rect x="320" y="482" width="420" height="62" fill="#dbeafe" class="box"/>
+<text x="530" y="508" text-anchor="middle" class="head">Return left / right commands + status</text>
+<text x="530" y="532" text-anchor="middle">Runner applies only in DRIVE; repeat next frame</text>
+<text x="35" y="580" class="head">Any failure or expired run → stop motors.</text>
+<text x="35" y="605" class="small">Controller failures latch until a new run. A new green turn cannot interrupt an active gap or sharp bend.</text>
+</svg>
