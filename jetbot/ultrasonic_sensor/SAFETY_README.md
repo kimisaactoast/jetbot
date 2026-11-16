@@ -2,6 +2,32 @@
 
 `safety.py` reads the sensor and runs the bench test. The obstacle-stop logic goes into the v20 notebook.
 
+## Dependencies
+
+| Needed | Where it comes from | Notes |
+|---|---|---|
+| Python 3.6+ | JetPack 4.6 | `safety.py` uses only the standard library (`os`, `time`, `argparse`) plus Jetson.GPIO |
+| Jetson.GPIO | preinstalled on the Nano (JetPack 4.6) | used only to set up the pins and send the trigger pulse |
+| sysfs GPIO (`/sys/class/gpio`) | Linux kernel on the Nano | ECHO is read straight from `/sys/class/gpio/gpioNN/value` (fast path) |
+| `gpio` group membership | one-time setup below | only when running on the Nano directly (terminal); not needed as root |
+
+**Inside the JetBot Docker container (Jupyter notebooks):** the container does **not** include Jetson.GPIO (`ModuleNotFoundError: No module named 'Jetson'`). Jetson.GPIO is plain Python, so copy it from the Nano into the notebook folder, which the container sees as `/workspace/...`:
+```bash
+# on the Nano (ssh jetbot@192.168.55.1), not in the Jupyter terminal
+python3 -c "import Jetson, os; print(os.path.dirname(Jetson.__file__))"   # e.g. /usr/lib/python3/dist-packages/Jetson
+cp -r /usr/lib/python3/dist-packages/Jetson ~/jetbot-project/notebooks/
+```
+Then restart the kernel and check: `import Jetson.GPIO as G; print(G.model)` → `JETSON_NANO`. This worked on Sun's robot on 2026-11-16 (the container already has access to the GPIO pins).
+
+**Files next to the notebook (`notebooks/`):**
+```
+v20_jetbot.ipynb
+safety.py        # this driver
+Jetson/          # copied Jetson.GPIO package (Docker only)
+```
+
+**v20 notebook settings that matter for the sensor:** `OBST_US_*` in the parameters cell. The sensor thread is started in the cell right after the parameters cell, because it needs those values. Use `OBST_US_MAX_AGE = 0.5`: at 0.25 s, occasional dropped readings (gaps up to 0.37 s) caused a false stop.
+
 ## Wiring (Waveshare JETSON-IO-BASE-A, 40-pin header, BOARD numbers)
 
 | Sensor | Nano pin |
